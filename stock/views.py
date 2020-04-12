@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 import urllib.request
 from datetime import datetime, date, timedelta
 from .models import Stock, StockPrice
+from BusinessLogic.dataAnalysis import DataAnalysis
 
 
 # Create your views here.
@@ -80,8 +81,9 @@ def refresh_con(request):
     name_company = [
         'KMEZ', 'AAPL', 'YHOO'
     ]
-
     for item in name_company:
+        stockId = Stock.objects.get(company=item)
+        StockPrice.objects.filter(id_stock = stockId).delete()
         new_quotes(item)
 
     return HttpResponse('coll')
@@ -138,7 +140,6 @@ def new_quotes(code):
 
         for item in tmp_arr:
             obj, created = Stock.objects.get_or_create(company=item['ticker'])
-
             tmp1 = StockPrice.objects.create(
                 id_stock=obj,
                 date_time=item['date'],
@@ -166,3 +167,9 @@ def quotes(code, year_start, month_start, day_start, year_end, month_end, day_en
         content = page.read()
         f.write(content)
         f.close()
+
+def test(request):
+    test = DataAnalysis("YHOO")
+    value = test.predictValue()
+    
+    return HttpResponse(str(value))
