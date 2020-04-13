@@ -11,7 +11,7 @@ class DataAnalysis:
     def __init__(self, companyName):
         self._companyName = companyName
 
-    def predictValue(self):
+    def predictValue(self, year, month, day):
         # СОздание временного Csv файла
         self.createTempCsv()
 
@@ -22,7 +22,7 @@ class DataAnalysis:
         m.fit(df)
 
         # Определение даты для прогноза (может быть множество )
-        dataFrame = pd.DataFrame({ 'ds': [datetime.date(2017, 5, 4)] })
+        dataFrame = pd.DataFrame({ 'ds': [datetime.date(int(year), int(month), int(day))] })
         forecast = m.predict(dataFrame)
         return forecast["yhat"][0]
 
