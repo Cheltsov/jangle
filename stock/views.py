@@ -1,8 +1,10 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 import urllib.request
 from datetime import datetime, date, timedelta
 from .models import Stock, StockPrice
+from .forms import GetDataForm, PredicationForm
+from BusinessLogic.dataAnalysis import DataAnalysis
 
 
 # Create your views here.
@@ -36,7 +38,8 @@ def get_company(request, id):
             tmp[i]['status_low'] = 0
             tmp[i]['status_open'] = 0
             tmp[i]['status_close'] = 0
-    return render(request, 'stock/detail.html', {'prices': tmp})
+    stock = Stock.objects.get(id=id)
+    return render(request, 'stock/detail.html', {'prices': tmp, 'companyName': stock.company})
 
 def get_grafic(request, id):
     tmp = StockPrice.objects.filter(id_stock=id).values('id', 'date_time', 'high', 'low')
@@ -77,29 +80,35 @@ def list_quotes(request):
 
 
 def refresh_con(request):
-    name_company = [
-        'KMEZ', 'AAPL', 'YHOO'
-    ]
+    if request.method == 'POST':
+        form = GetDataForm(request.POST)
+        if form.is_valid():
+            name_company = [
+                'KMEZ', 'AAPL', 'YHOO'
+            ]
+            for item in name_company:
+                stockId = Stock.objects.get(company=item)
+                StockPrice.objects.filter(id_stock = stockId).delete()
+                new_quotes(item, form.cleaned_data['year_start'], form.cleaned_data['year_end'], form.cleaned_data['month_start'], form.cleaned_data['month_end'], form.cleaned_data['day_start'], form.cleaned_data['day_end'])
+            else:
+                return HttpResponse('ERROR!')
+    else:
+        name_company = [
+            'KMEZ', 'AAPL', 'YHOO'
+        ]
+        for item in name_company:
+            stockId = Stock.objects.get(company=item)
+            StockPrice.objects.filter(id_stock = stockId).delete()
+            new_quotes(item, '2017', '2017','05', '06', '10', '20')
+    return HttpResponseRedirect('/stock/')
 
-    for item in name_company:
-        new_quotes(item)
 
-    return HttpResponse('coll')
-
-
-def new_quotes(code):
+def new_quotes(code, year_start, year_end, month_start, month_end, day_start, day_end):
     code = code
-    e = '.txt'
     market = '1'
     em = '175924'
     e = '.csv'
     p = '8'
-    yf = '2017'
-    yt = '2017'
-    month_start = '05'
-    day_start = '20'
-    month_end = '06'
-    day_end = '20'
     dtf = '1'
     tmf = '1'
     MSOR = '1'
@@ -109,15 +118,8 @@ def new_quotes(code):
     datf = '1'
     at = '1'
 
-    year_start = yf[2:]
-    year_end = yt[2:]
-    mf = (int(month_start.replace('0', ''))) - 1
-    mt = (int(month_end.replace('0', ''))) - 1
-    df = (int(day_start.replace('0', ''))) - 1
-    dt = (int(day_end.replace('0', ''))) - 1
-
-    quotes(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, df, mf, yf, dt,
-           mt, yt, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at)
+    quotes(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, day_start, month_start, year_start, day_end,
+           month_end, year_end, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at)
 
     in_file = 'company_quotes2.csv'
     with open(in_file, 'r')as read_file:
@@ -138,7 +140,6 @@ def new_quotes(code):
 
         for item in tmp_arr:
             obj, created = Stock.objects.get_or_create(company=item['ticker'])
-
             tmp1 = StockPrice.objects.create(
                 id_stock=obj,
                 date_time=item['date'],
@@ -149,7 +150,7 @@ def new_quotes(code):
                 vol=item['vol']
             )
             tmp1.save()
-
+# http://export.finam.ru/GAZP_200402_200413.txt?market=1&em=16842&code=GAZP&apply=0&df=2&mf=3&yf=2020&from=02.04.2020&dt=13&mt=3&yt=2020&to=13.04.2020&p=7&f=GAZP_200402_200413&e=.txt&cn=GAZP&dtf=1&tmf=1&MSOR=1&mstime=on&mstimever=1&sep=1&sep2=1&datf=1&at=1
 
 def quotes(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, df, mf, yf, dt,
            mt, yt, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at):
@@ -166,3 +167,13 @@ def quotes(code, year_start, month_start, day_start, year_end, month_end, day_en
         content = page.read()
         f.write(content)
         f.close()
+
+def predictValue(request):
+    if request.method == 'POST':
+        form = PredicationForm(request.POST)
+        if form.is_valid():
+            predicator = DataAnalysis(form.cleaned_data['companyName'])
+            value = predicator.predictValue(form.cleaned_data['year'], form.cleaned_data['month'], form.cleaned_data['day'])  
+            return HttpResponse("Прогнозируемое значние = " + str(value))
+        else:
+            return HttpResponse("ERROR!")

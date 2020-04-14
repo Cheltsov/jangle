@@ -14,7 +14,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-            <h1 class="h2">Dashboard</h1>
+            <h1 class="h2">Компании</h1>
             <div class="btn-toolbar mb-2 mb-md-0">
                 <div class="btn-group mr-2">
                     <button class="btn btn-sm btn-outline-secondary">Share</button>
@@ -37,7 +37,19 @@
         {% comment %}<canvas class="my-4 chartjs-render-monitor" id="myChart" width="1534" height="647"
                 style="display: block; width: 1534px; height: 647px;"></canvas>{% endcomment %}
 
-        <h2>Section title</h2>
+        <h2>Запрос на получение котировок с</h2>
+        <form action="/stock/refresh_con/" method="POST">
+            {% csrf_token %}
+            <input type="text" name="year_start" placeholder="Год">
+            <input type="text" name="month_start" placeholder="Месяц">
+            <input type="text" name="day_start" placeholder="День">
+            <h3>по</h3>
+            <input type="text" name="year_end" placeholder="Год">
+            <input type="text" name="month_end" placeholder="Месяц">
+            <input type="text" name="day_end" placeholder="День">
+            <input type="submit">
+        </form>
+        <br>
         <div class="table-responsive">
             <table class="table table-striped table-sm">
                 <thead>
