@@ -38,7 +38,7 @@
                 style="display: block; width: 1534px; height: 647px;"></canvas>{% endcomment %}
 
         <h2>Прогнозирование</h2>
-        <form action="/stock/predictValue/" method="POST">
+        <form id="predictionForm" action="/stock/predictValue/" method="POST">
             {% csrf_token %}
             <input type="hidden" name="companyName" value="{{companyName}}">
             <input type="text" name="year" placeholder="Год">
@@ -101,5 +101,26 @@
             </table>
         </div>
     </main>
+
+    <script>
+        $("#predictionForm").submit(e => {
+            e.preventDefault();
+            $.ajax({
+                url: "/stock/predictValue/",
+                type: "POST",
+                headers: { "X-CSRFToken": $("input[name=csrfmiddlewaretoken]").val() },
+                data: {
+                    'companyName': $("input[name=companyName]").val(),
+                    'year': $("input[name=year]").val(),
+                    'month': $("input[name=month]").val(),
+                    'day': $("input[name=day]").val()
+                },
+                success:function(response){
+                    alert("Прогнозируемое значение = " + response); 
+                }
+            });
+        });
+
+    </script>
 
 {% endblock %}

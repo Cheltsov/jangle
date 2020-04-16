@@ -90,8 +90,8 @@ def refresh_con(request):
                 stockId = Stock.objects.get(company=item)
                 StockPrice.objects.filter(id_stock = stockId).delete()
                 new_quotes(item, form.cleaned_data['year_start'], form.cleaned_data['year_end'], form.cleaned_data['month_start'], form.cleaned_data['month_end'], form.cleaned_data['day_start'], form.cleaned_data['day_end'])
-            else:
-                return HttpResponse('ERROR!')
+        else:
+            return HttpResponse('ERROR!')
     else:
         name_company = [
             'KMEZ', 'AAPL', 'YHOO'
@@ -174,6 +174,8 @@ def predictValue(request):
         if form.is_valid():
             predicator = DataAnalysis(form.cleaned_data['companyName'])
             value = predicator.predictValue(form.cleaned_data['year'], form.cleaned_data['month'], form.cleaned_data['day'])  
-            return HttpResponse("Прогнозируемое значние = " + str(value))
+            return HttpResponse(value, content_type='application/json')
         else:
-            return HttpResponse("ERROR!")
+            return HttpResponse('false', content_type='application/json')
+    else:
+        return HttpResponse('false', content_type='application/json')
