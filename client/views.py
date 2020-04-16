@@ -19,7 +19,7 @@ def auth_main(request):
                                                                                                               'email').first()
         if tmp_cl:
             request.session['client'] = str(tmp_cl['email']) + "---" + str(tmp_cl['id'])
-            response = HttpResponse(render(request, 'client/cabinet.html', {}))
+            response = HttpResponseRedirect('/cabinet')
             if request.POST.get('remember-me'):
                 response.set_cookie("customerId", tmp_cl['id'])
             return response
