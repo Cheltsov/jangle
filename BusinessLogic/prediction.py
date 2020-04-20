@@ -2,8 +2,14 @@ from stock.models import Stock, StockPrice
 import pandas as pd
 from fbprophet import Prophet
 import datetime
+from abc import abstractmethod
 
-class DataAnalysis:
+class IPrediction():
+    @abstractmethod
+    def predict(self,  year, month, day) -> float:
+        pass
+
+class PandasPrediction(IPrediction):
 
     _companyName = ""
     _tempFileName = "tempAnalisFile.csv"
@@ -11,7 +17,7 @@ class DataAnalysis:
     def __init__(self, companyName):
         self._companyName = companyName
 
-    def predictValue(self, year, month, day):
+    def predict(self, year, month, day)  -> float:
         # СОздание временного Csv файла
         self.createTempCsv()
 
