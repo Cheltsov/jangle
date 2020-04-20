@@ -1,13 +1,11 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-import urllib.request
 from datetime import datetime, date, timedelta
 from .models import Stock, StockPrice
 from .forms import GetDataForm, PredicationForm
-from BusinessLogic.dataAnalysis import DataAnalysis
+from BusinessLogic.prediction import IPrediction, PandasPrediction
+from BusinessLogic.exchange import IExchange, FinamExchange
 
-
-# Create your views here.
 
 def get_company(request, id):
     tmp = StockPrice.objects.filter(id_stock=id).values('id', 'date_time', 'high', 'low', 'open', 'close', 'vol').order_by('date_time')
@@ -55,7 +53,6 @@ def list_quotes(request):
                                                                    'close',
                                                                    'vol',
                                                                    'open')
-        #print(st_p)
         st['prices'] = st_p
 
         now_date = StockPrice.objects.filter(id_stock=st['id']).values('date_time', 'high', 'low').order_by('-date_time').first()
@@ -75,9 +72,6 @@ def list_quotes(request):
         'quotes': stock
     }
     return render(request, 'stock/index.html', content)
-
-
-
 
 def refresh_con(request):
     if request.method == 'POST':
@@ -118,11 +112,11 @@ def new_quotes(code, year_start, year_end, month_start, month_end, day_start, da
     datf = '1'
     at = '1'
 
-    quotes(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, day_start, month_start, year_start, day_end,
-           month_end, year_end, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at)
+    #getExchangeIntegration().get_data(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, day_start, month_start, year_start, day_end,
+     #      month_end, year_end, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at)
 
     in_file = 'company_quotes2.csv'
-    with open(in_file, 'r')as read_file:
+    with open(in_file, 'r') as read_file:
         tmp_arr = []
         for line in read_file:
             arr_param = line.replace("\n", "").split(',')
@@ -150,32 +144,21 @@ def new_quotes(code, year_start, year_end, month_start, month_end, day_start, da
                 vol=item['vol']
             )
             tmp1.save()
-# http://export.finam.ru/GAZP_200402_200413.txt?market=1&em=16842&code=GAZP&apply=0&df=2&mf=3&yf=2020&from=02.04.2020&dt=13&mt=3&yt=2020&to=13.04.2020&p=7&f=GAZP_200402_200413&e=.txt&cn=GAZP&dtf=1&tmf=1&MSOR=1&mstime=on&mstimever=1&sep=1&sep2=1&datf=1&at=1
-
-def quotes(code, year_start, month_start, day_start, year_end, month_end, day_end, e, market, em, df, mf, yf, dt,
-           mt, yt, p, dtf, tmf, MSOR, mstimever, sep, sep2, datf, at):
-    with urllib.request.urlopen('http://export.finam.ru/' + str(code) + '_' + str(year_start) + str(month_start) + str(
-            day_start) + '_' + str(year_end) + str(month_end) + str(day_end) + str(e) + '?market=' + str(
-        market) + '&em=' + str(em) + '&code=' + str(code) + '&apply=0&df=' + str(df) + '&mf=' + str(
-        mf) + '&yf=' + str(yf) + '&from=' + str(day_start) + '.' + str(month_start) + '.' + str(yf) + '&dt=' + str(
-        dt) + '&mt=' + str(mt) + '&yt=' + str(yt) + '&to=' + str(day_end) + '.' + str(month_end) + '.' + str(
-        yt) + '&p=' + str(p) + '&f=' + str(code) + '_' + str(year_start) + str(month_start) + str(
-        day_start) + '_' + str(year_end) + str(month_end) + str(day_end) + '&e=' + str(e) + '&cn=' + str(
-        code) + '&dtf=' + str(dtf) + '&tmf=' + str(tmf) + '&MSOR=' + str(MSOR) + '&mstimever=' + str(
-        mstimever) + '&sep=' + str(sep) + '&sep2=' + str(sep2) + '&datf=' + str(datf) + '&at=' + str(at)) as page:
-        f = open("company_quotes2.csv", "wb")
-        content = page.read()
-        f.write(content)
-        f.close()
 
 def predictValue(request):
     if request.method == 'POST':
         form = PredicationForm(request.POST)
         if form.is_valid():
-            predicator = DataAnalysis(form.cleaned_data['companyName'])
-            value = predicator.predictValue(form.cleaned_data['year'], form.cleaned_data['month'], form.cleaned_data['day'])  
+            predicator = getPredictionEngine(form.cleaned_data['companyName'])
+            value = predicator.predict(form.cleaned_data['year'], form.cleaned_data['month'], form.cleaned_data['day'])  
             return HttpResponse(value, content_type='application/json')
         else:
             return HttpResponse('false', content_type='application/json')
     else:
         return HttpResponse('false', content_type='application/json')
+
+def getExchangeIntegration() -> IExchange:
+    return FinamExchange()
+
+def getPredictionEngine(companyName) -> IPrediction:
+    return PandasPrediction(companyName)
